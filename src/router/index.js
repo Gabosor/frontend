@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import MapView from '@/views/MapView.vue'
 import DashboardView from '@/views/DashboardView.vue'
-
+import AuthAPI from '@/api/AuthAPI'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -26,6 +26,7 @@ const router = createRouter({
     {
       path: '/dashboard',
       name: 'dashboard',
+      meta: { requiresAuth: true },
       component: DashboardView,
       children: [
          {
@@ -54,6 +55,20 @@ const router = createRouter({
 
     
   ],
+})
+//Para autenticar al usuario
+router.beforeEach(async (to, from, next) => {
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
+  if (requiresAuth) {
+    try {
+      await AuthAPI.auth()
+      next() // simplemente sigue
+    } catch (error) {
+      next({ name: 'login' })
+    }
+  } else {
+    next()
+  }
 })
 
 export default router

@@ -1,6 +1,26 @@
 <script lang="ts" setup>
     import { inject } from 'vue';
- 
+    import AuthAPI from '@/api/AuthAPI';
+      import { useRouter } from 'vue-router';
+
+      const router = useRouter()
+
+      const toast = inject('toast')
+      const handleSubmit = async (formData) => {
+          try {
+              const {data: {token}} = await AuthAPI.login(formData)
+              localStorage.setItem('AUTH_TOKEN', token)
+              router.push({name: 'dashboard'})
+          } catch (error) {
+              toast.open({
+                  message: error.response.data.msg,
+                  type: 'error',
+                  Number: 3000
+              })
+            // toast.error(error.response.data.msg)
+          }
+
+      }
     
 </script>
 
@@ -13,6 +33,7 @@
         type="form"
         :actions="false"
         incomplete-message="No se pudo enviar, revisa las notificaciones"
+        @submit="handleSubmit"
       >
         <FormKit
           type="email"
@@ -38,7 +59,6 @@
           }"
           prefix-icon="password"
             suffix-icon="eyeClosed"
-            @suffix-icon-click="handleIconClick"
             suffix-icon-class="hover:text-blue-500"
         />
         <FormKit type="submit">Iniciar Sesión</FormKit>

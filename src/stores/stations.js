@@ -4,7 +4,7 @@ import { ref, computed, onMounted } from "vue";
 
 export const useStationsStore = defineStore('stations', () => {
     
-    const stations = ref({})
+    const stations = ref([])
     
     onMounted(async () => {
         try {
@@ -14,11 +14,19 @@ export const useStationsStore = defineStore('stations', () => {
             console.log(error)
         }
     })
-    
+     const fetchStations = async () => {
+        try {
+        const { data } = await StationAPI.all()
+        stations.value = data
+        } catch (error) {
+        console.error("Error al cargar estaciones:", error)
+        }
+  }
 
 
 
     return {
         stations,
+        fetchStations
     }
 })

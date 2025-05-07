@@ -61,7 +61,9 @@
             suffix-icon="eyeClosed"
             suffix-icon-class="hover:text-blue-500"
         />
-        <FormKit type="submit">Iniciar Sesión</FormKit>
+        <FormKit type="submit"
+          
+        >Iniciar Sesión</FormKit>
       </FormKit>
     </div>
   </div>

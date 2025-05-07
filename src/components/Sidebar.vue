@@ -1,52 +1,90 @@
 <script lang="ts" setup>
-
+// Aquí puedes manejar los clicks con funciones o eventos
 </script>
 
 <template>
-    <div class="absolute top-0 left-0 w-16 m-10 bg-green-700 flex flex-col items-center py-4 space-y-6 z-10 rounded-lg ">
-      <button class="text-white hover:bg-green-600 p-2 rounded-full">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
-          viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round"
-            d="M4 6h16M4 12h16M4 18h16" />
+  <div class="absolute top-24 left-4 z-50">
+    <div class="flex flex-col items-center gap-4 bg-green-700 text-white rounded-2xl py-4 px-2 shadow-lg w-14">
+      
+      <!-- Menú hamburguesa -->
+      <button class="hover:bg-green-600 p-2 rounded-full transition">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
         </svg>
       </button>
-      <button class="text-white hover:bg-green-600 p-2 rounded-full">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
-          viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round"
-            d="M3 9.75L12 3l9 6.75V18a3 3 0 01-3 3H6a3 3 0 01-3-3V9.75z" />
+
+      <!-- Icono Home -->
+      <button class="hover:bg-green-600 p-2 rounded-full transition">
+        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M10.707 1.293a1 1 0 00-1.414 0L3 7.586V18a1 1 0 001 1h4a1 1 0 001-1v-4h2v4a1 1 0 001 1h4a1 1 0 001-1V7.586l-6.293-6.293z"/>
         </svg>
       </button>
-      <button class="text-white bg-green-600 p-2 rounded-full">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
-          viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round"
-            d="M12 2c4.418 0 8 3.582 8 8 0 5.25-8 12-8 12s-8-6.75-8-12c0-4.418 3.582-8 8-8z" />
-          <path stroke-linecap="round" stroke-linejoin="round"
-            d="M12 10a2 2 0 110 4 2 2 0 010-4z" />
+       <button class="hover:bg-green-600 p-2 rounded-full transition">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
         </svg>
       </button>
-      <button class="text-white hover:bg-green-600 p-2 rounded-full">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
-          viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round"
-            d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L15 13.414V19a1 1 0 01-1.447.894l-4-2A1 1 0 019 17v-3.586L3.293 6.707A1 1 0 013 6V4z" />
+
+      <!-- Icono Home -->
+      <button class="hover:bg-green-600 p-2 rounded-full transition">
+        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M10.707 1.293a1 1 0 00-1.414 0L3 7.586V18a1 1 0 001 1h4a1 1 0 001-1v-4h2v4a1 1 0 001 1h4a1 1 0 001-1V7.586l-6.293-6.293z"/>
         </svg>
       </button>
-      <button class="text-white hover:bg-green-600 p-2 rounded-full">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
-          viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round"
-            d="M12 8c-1.5 0-3 .75-3 2s1.5 2 3 2 3 .75 3 2-1.5 2-3 2m0-8v1m0 7v1m0-9a9 9 0 100 18 9 9 0 000-18z" />
+
+       <button class="hover:bg-green-600 p-2 rounded-full transition">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
         </svg>
       </button>
-      <button class="text-white hover:bg-green-600 p-2 rounded-full mt-auto">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
-          viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round"
-            d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
+
+      <!-- Icono Home -->
+      <button class="hover:bg-green-600 p-2 rounded-full transition">
+        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M10.707 1.293a1 1 0 00-1.414 0L3 7.586V18a1 1 0 001 1h4a1 1 0 001-1v-4h2v4a1 1 0 001 1h4a1 1 0 001-1V7.586l-6.293-6.293z"/>
+        </svg>
+      </button>
+ <button class="hover:bg-green-600 p-2 rounded-full transition">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+
+      <!-- Icono Home -->
+      <button class="hover:bg-green-600 p-2 rounded-full transition">
+        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M10.707 1.293a1 1 0 00-1.414 0L3 7.586V18a1 1 0 001 1h4a1 1 0 001-1v-4h2v4a1 1 0 001 1h4a1 1 0 001-1V7.586l-6.293-6.293z"/>
+        </svg>
+      </button>
+
+
+      <!-- Icono ubicación activa -->
+      <button class="bg-green-500 p-2 rounded-full ring-2 ring-white ring-offset-2 transition">
+        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M10 2a6 6 0 00-6 6c0 4.418 6 10 6 10s6-5.582 6-10a6 6 0 00-6-6zM8 9a2 2 0 114 0 2 2 0 01-4 0z"/>
+        </svg>
+      </button>
+
+      <!-- Icono filtro -->
+      <button class="hover:bg-green-600 p-2 rounded-full transition">
+        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M3 4a1 1 0 011-1h12a1 1 0 01.8 1.6L13 10.5V17a1 1 0 01-1.447.894l-2-1A1 1 0 019 16v-5.5L3.2 4.6A1 1 0 013 4z"/>
+        </svg>
+      </button>
+
+      <!-- Icono recargar -->
+      <button class="hover:bg-green-600 p-2 rounded-full transition">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v6h6M20 20v-6h-6M4 14a8 8 0 0112-7.5M20 10a8 8 0 01-12 7.5"/>
+        </svg>
+      </button>
+
+      <!-- Icono modo noche -->
+      <button class="hover:bg-green-600 p-2 rounded-full transition">
+        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
         </svg>
       </button>
     </div>
+  </div>
 </template>

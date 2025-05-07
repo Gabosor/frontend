@@ -1,10 +1,11 @@
 <script lang="ts" setup>
-import { LMap, LTileLayer, LMarker, LIcon, LPopup } from "@vue-leaflet/vue-leaflet";
+import { LMap, LTileLayer, LMarker, LIcon, LPopup, LGeoJson } from "@vue-leaflet/vue-leaflet";
 import { ref } from "vue";
     import Sidebar from "@/components/Sidebar.vue";
     import Search from "@/components/Search.vue";
     import { useStationsStore } from "@/stores/stations";
     import { useServicesStore } from "@/stores/services";
+
     
     const store = useStationsStore()
     const servicesStore = useServicesStore()
@@ -42,6 +43,7 @@ import { ref } from "vue";
         :use-global-leaflet="false"
         class="h-full w-full z-0"
       >
+      
         <LTileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           layer-type="base"
@@ -80,7 +82,7 @@ import { ref } from "vue";
         </LMarker>
         </LMap>
 
-    <Sidebar/>
+
 
   </div>
 </template>

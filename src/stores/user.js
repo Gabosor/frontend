@@ -24,6 +24,7 @@ export const useUserStore = defineStore('user', () => {
         router.push({name: 'login'})
     }
     const getUserName = computed(() => user.value?.name ? user.value?.name : '')
+    const getUserEmail = computed(() => user.value?.email ? user.value?.email :'')
     
 
 
@@ -32,5 +33,6 @@ export const useUserStore = defineStore('user', () => {
         loading,
         logout,
         getUserName,
+        getUserEmail
     }
 })

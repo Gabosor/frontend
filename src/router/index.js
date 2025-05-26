@@ -29,6 +29,11 @@ const router = createRouter({
       meta: { requiresAuth: true },
       component: DashboardView,
       children: [
+        {
+          path: '',
+          name: 'dashboard-stats',
+          component: () => import('../components/DashboardStats.vue')
+        },
          {
           path: '',
           name: 'stations',
@@ -49,6 +54,7 @@ const router = createRouter({
           name: 'new-station',
           component: () => import('../views/NewStationView.vue')
         },
+        
       ]
 
     },

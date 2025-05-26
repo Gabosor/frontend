@@ -1,25 +1,26 @@
 import ServiceAPI from "@/api/ServiceAPI";
 import { defineStore } from "pinia";
-import { onMounted, ref } from "vue";
+import { ref, onMounted } from "vue";
 
-export const  useServicesStore = defineStore('services', () => {
-    const services = ref({})
+export const useServicesStore = defineStore('services', () => {
+    const services = ref([])
 
-    onMounted(async () => {
+    const fetchServices = async () => {
         try {
             const { data } = await ServiceAPI.all()
             services.value = data
         } catch (error) {
-            console.log(error)
+            console.error('Error al cargar servicios:', error)
         }
+    }
+
+    onMounted(async () => {
+        await fetchServices()
     })
-
-
-
 
     return {
         services,
-   
+        fetchServices
     }
 })
 

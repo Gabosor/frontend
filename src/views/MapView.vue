@@ -360,7 +360,7 @@ const limpiarBusquedaCercana = () => {
           </div>
           <div class="flex items-center gap-2">
             <div class="w-3 h-3 rounded-full bg-red-500"></div>
-            <span class="text-sm">Baja disponibilidad (<25%)</span>
+            <span class="text-sm">Baja disponibilidad (menor al 25%)</span>
           </div>
         </div>
       </div>

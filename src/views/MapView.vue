@@ -11,7 +11,7 @@ import {
   LControl,
 } from "@vue-leaflet/vue-leaflet"
 import "leaflet/dist/leaflet.css"
-import { ref, onMounted, computed } from "vue"
+import { ref, onMounted, computed, onUnmounted } from "vue"
 import Search from "@/components/Search.vue"
 import { useStationsStore } from "@/stores/stations"
 import { useServicesStore } from "@/stores/services"
@@ -29,11 +29,8 @@ const center = ref([-17.973244, -67.106225])
 const toast = inject('toast')
 const API_URL = import.meta.env.VITE_BACKEND_URL
 
-
 const showInstructions = ref(false)
-
-
-
+const isMobileDrawerOpen = ref(false)
 
 // Nuevos refs para filtros
 const showStations = ref(true)
@@ -45,14 +42,15 @@ const loading = ref(false)
 
 // Añadir searchQuery
 const searchQuery = ref('')
+const availabilityRange = ref(0) // Nuevo ref para el rango de disponibilidad
+const selectedFuels = ref([]) // Nuevo ref para múltiples combustibles
 
 // Lista de tipos de combustible actualizada para coincidir con los valores almacenados
 const fuelTypes = [
-  { value: 'all', label: 'Todos los combustibles' },
-  { value: 'Gasolina', label: 'Gasolina' },
-  { value: 'Diesel', label: 'Diesel' },
-  { value: 'Gasolina Premium', label: 'Gasolina Premium' },
-  { value: 'Diesel ULS', label: 'Diesel ULS' }
+  { value: 'Gasolina', label: 'Gasolina', color: 'blue' },
+  { value: 'Diesel', label: 'Diesel', color: 'yellow' },
+  { value: 'Gasolina Premium', label: 'Gasolina Premium', color: 'green' },
+  { value: 'Diesel ULS', label: 'Diesel ULS', color: 'purple' }
 ]
 
 const serviceTypes = [
@@ -65,9 +63,6 @@ const serviceTypes = [
   { value: 'hostal', label: 'Hostales' }
 ]
 
-// Ref para múltiples tipos de combustible seleccionados
-const selectedFuelTypes = ref([])
-
 // Configuración del ícono por defecto
 const userIcon = {
   iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
@@ -78,12 +73,27 @@ const userIcon = {
   shadowSize: [41, 41]
 }
 
+// Agregar variable para el intervalo
+let stationsIntervalId
+
 onMounted(async () => {
   obtenerUbicacion()
   await Promise.all([
     store.fetchStations(),
     servicesStore.fetchServices()
   ])
+  
+  // Iniciar actualización automática cada 10 segundos
+  stationsIntervalId = setInterval(() => {
+    store.fetchStations()
+  }, 10000)
+})
+
+// Agregar onUnmounted para limpiar el intervalo
+onUnmounted(() => {
+  if (stationsIntervalId) {
+    clearInterval(stationsIntervalId)
+  }
 })
 
 const obtenerUbicacion = () => {
@@ -94,13 +104,32 @@ const obtenerUbicacion = () => {
       const lng = pos.coords.longitude
       const userPoint = [lat, lng]
 
+
       from.value = userPoint
       center.value = userPoint
       loading.value = false
+      toast.success('Ubicación actualizada correctamente')
     },
-    () => {
-      toast.error('No pudimos obtener tu ubicación')
+    (error) => {
       loading.value = false
+      switch(error.code) {
+        case error.PERMISSION_DENIED:
+          toast.error('Por favor, permite el acceso a tu ubicación para usar esta función')
+          break
+        case error.POSITION_UNAVAILABLE:
+          toast.error('La información de ubicación no está disponible')
+          break
+        case error.TIMEOUT:
+          toast.error('La solicitud de ubicación ha expirado')
+          break
+        default:
+          toast.error('Error al obtener tu ubicación')
+      }
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 5000,
+      maximumAge: 0
     }
   )
 }
@@ -173,13 +202,28 @@ const filteredStations = computed(() => {
     )
   }
 
-  // Filtrar por tipo de combustible
-  if (selectedFuelType.value !== 'all') {
+  // Filtrar por tipos de combustible seleccionados
+  if (selectedFuels.value.length > 0) {
     filtered = filtered.filter(station => 
-      station.fuels?.some(fuel => 
-        fuel.type === selectedFuelType.value // Comparación exacta sin transformación
-      )
+      station.fuels?.some(fuel => selectedFuels.value.includes(fuel.type))
     )
+  }
+
+  // Filtrar por disponibilidad mínima
+  if (availabilityRange.value > 0) {
+    filtered = filtered.filter(station => {
+      // Si hay combustibles seleccionados, solo verificar esos
+      if (selectedFuels.value.length > 0) {
+        return selectedFuels.value.every(selectedFuel => {
+          const fuel = station.fuels?.find(f => f.type === selectedFuel)
+          return fuel && (fuel.available / fuel.capacity) * 100 >= availabilityRange.value
+        })
+      }
+      // Si no hay combustibles seleccionados, verificar todos los combustibles
+      return station.fuels?.every(fuel => 
+        (fuel.available / fuel.capacity) * 100 >= availabilityRange.value
+      )
+    })
   }
 
   return filtered
@@ -235,27 +279,49 @@ const limpiarBusquedaCercana = () => {
   showRoute.value = false
   toast.success('Búsqueda de estación cercana eliminada')
 }
+
+// Agregar estas funciones después de getStationStatus
+const getBatteryLevel = (available, capacity) => {
+  const percentage = (available / capacity) * 100
+  if (percentage >= 75) return 'bg-green-500'
+  if (percentage >= 50) return 'bg-yellow-400'
+  if (percentage >= 25) return 'bg-orange-400'
+  return 'bg-red-500'
+}
+
+const fuelBadgeClass = (type) => {
+  switch (type.toLowerCase()) {
+    case 'gasolina': return 'bg-blue-100 text-blue-800'
+    case 'diesel': return 'bg-yellow-100 text-yellow-800'
+    case 'gasolina premium': return 'bg-green-100 text-green-800'
+    case 'diesel uls': return 'bg-purple-100 text-purple-800'
+    default: return 'bg-gray-100 text-gray-700'
+  }
+}
 </script>
 
 <template>
   <div class="relative h-screen w-screen">
-    <!-- Panel de control en el lado derecho -->
-    <div class="absolute top-5 right-5 z-[1000] bg-white/95 backdrop-blur-sm p-4 rounded-lg shadow-lg w-80 space-y-4">
-      <div class="flex items-center justify-between border-b pb-2">
-        <h3 class="font-semibold text-lg">Filtros de búsqueda</h3>
-        <div class="flex gap-2">
-          <button
-            @click="obtenerUbicacion"
-            class="text-blue-600 hover:text-blue-800 p-2 rounded-full hover:bg-blue-50 transition"
-            :disabled="loading"
-            title="Obtener mi ubicación"
-          >
-            <i class="fas fa-location-crosshairs"></i>
-          </button>
+    <!-- Panel de control responsivo -->
+    <div class="hidden md:block absolute top-5 right-5 z-[1000] bg-white/95 backdrop-blur-sm p-4 rounded-lg shadow-lg w-96 space-y-4">
+      <!-- Logo y título -->
+      <div class="flex items-center gap-3 border-b pb-3">
+        <img src="/imageLogo.png" alt="Logo" class="w-10 h-10 object-contain" />
+        <div>
+          <h3 class="font-semibold text-lg">Filtros de búsqueda</h3>
+          <p class="text-xs text-gray-500">Encuentra estaciones y servicios</p>
         </div>
+        <button
+          @click="obtenerUbicacion"
+          class="ml-auto text-blue-600 hover:text-blue-800 p-2 rounded-full hover:bg-blue-50 transition"
+          :disabled="loading"
+          title="Obtener mi ubicación"
+        >
+          <i class="fas fa-location-crosshairs"></i>
+        </button>
       </div>
 
-      <!-- Barra de búsqueda integrada -->
+      <!-- Barra de búsqueda mejorada -->
       <div class="relative">
         <input
           type="text"
@@ -266,8 +332,8 @@ const limpiarBusquedaCercana = () => {
         <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
       </div>
 
-      <!-- Filtros de combustible -->
-      <div class="space-y-2">
+      <!-- Filtros de estaciones mejorados -->
+      <div class="space-y-4">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
             <input
@@ -276,27 +342,70 @@ const limpiarBusquedaCercana = () => {
               class="form-checkbox"
               id="show-stations"
             />
-            <label for="show-stations" class="text-sm font-medium">Estaciones</label>
+            <label for="show-stations" class="text-sm font-medium flex items-center gap-2">
+              <i class="fas fa-gas-pump text-green-600"></i>
+              Estaciones
+            </label>
           </div>
           <span class="text-xs text-gray-500">{{ filteredStations.length }} disponibles</span>
         </div>
-        <select
-          v-model="selectedFuelType"
-          class="w-full p-2 border rounded-lg text-sm"
-          :disabled="!showStations"
-        >
-          <option
-            v-for="type in fuelTypes"
-            :key="type.value"
-            :value="type.value"
-          >
-            {{ type.label }}
-          </option>
-        </select>
+
+        <!-- Filtro de combustibles múltiples -->
+        <div v-if="showStations" class="space-y-2">
+          <label class="text-sm font-medium text-gray-700">Tipos de combustible</label>
+          <div class="grid grid-cols-2 gap-2">
+            <div
+              v-for="fuel in fuelTypes"
+              :key="fuel.value"
+              class="flex items-center gap-2"
+            >
+              <input
+                type="checkbox"
+                :value="fuel.value"
+                v-model="selectedFuels"
+                :id="'fuel-' + fuel.value"
+                class="form-checkbox"
+              />
+              <label
+                :for="'fuel-' + fuel.value"
+                class="text-sm flex items-center gap-1"
+              >
+                <span
+                  class="w-3 h-3 rounded-full"
+                  :class="'bg-' + fuel.color + '-500'"
+                ></span>
+                {{ fuel.label }}
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filtro de disponibilidad -->
+        <div v-if="showStations" class="space-y-2">
+          <div class="flex justify-between items-center">
+            <label class="text-sm font-medium text-gray-700">Disponibilidad mínima</label>
+            <span class="text-sm text-gray-500">{{ availabilityRange }}%</span>
+          </div>
+          <input
+            type="range"
+            v-model="availabilityRange"
+            min="0"
+            max="100"
+            step="10"
+            class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+          />
+          <div class="flex justify-between text-xs text-gray-500">
+            <span>0%</span>
+            <span>25%</span>
+            <span>50%</span>
+            <span>75%</span>
+            <span>100%</span>
+          </div>
+        </div>
       </div>
 
       <!-- Filtros de servicios -->
-      <div class="space-y-2">
+      <div class="space-y-4">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
             <input
@@ -305,14 +414,18 @@ const limpiarBusquedaCercana = () => {
               class="form-checkbox"
               id="show-services"
             />
-            <label for="show-services" class="text-sm font-medium">Servicios</label>
+            <label for="show-services" class="text-sm font-medium flex items-center gap-2">
+              <i class="fas fa-concierge-bell text-blue-600"></i>
+              Servicios
+            </label>
           </div>
           <span class="text-xs text-gray-500">{{ filteredServices.length }} disponibles</span>
         </div>
+
         <select
+          v-if="showServices"
           v-model="selectedServiceType"
-          class="w-full p-2 border rounded-lg text-sm"
-          :disabled="!showServices"
+          class="w-full p-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         >
           <option
             v-for="type in serviceTypes"
@@ -346,23 +459,184 @@ const limpiarBusquedaCercana = () => {
         </button>
       </div>
 
-      <!-- Leyenda -->
-      <div class="border-t pt-2 text-sm">
-        <h4 class="font-medium mb-2">Disponibilidad de combustible</h4>
-        <div class="space-y-1.5">
-          <div class="flex items-center gap-2">
-            <div class="w-3 h-3 rounded-full bg-green-500"></div>
-            <span class="text-sm">Alta disponibilidad (>75%)</span>
+    </div>
+
+    <!-- Botón flotante para móvil -->
+    <button
+      @click="isMobileDrawerOpen = true"
+      class="md:hidden fixed bottom-5 right-5 z-[1000] bg-green-600 text-white p-4 rounded-full shadow-lg hover:bg-green-700 transition flex items-center gap-2"
+    >
+      <img src="/imageLogo.png" alt="Logo" class="w-6 h-6 object-contain" />
+      <span class="font-medium">Filtros</span>
+    </button>
+
+    <!-- Drawer móvil -->
+    <div
+      v-if="isMobileDrawerOpen"
+      class="md:hidden fixed inset-0 z-[1001]"
+    >
+      <!-- Overlay semitransparente -->
+      <div
+        class="absolute inset-0 bg-black/50"
+        @click="isMobileDrawerOpen = false"
+      ></div>
+
+      <!-- Contenido del drawer -->
+      <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl p-4 space-y-4 max-h-[80vh] overflow-y-auto">
+        <!-- Header del drawer -->
+        <div class="flex items-center gap-3 border-b pb-3">
+          <img src="/imageLogo.png" alt="Logo" class="w-10 h-10 object-contain" />
+          <div>
+            <h3 class="font-semibold text-lg">Filtros de búsqueda</h3>
+            <p class="text-xs text-gray-500">Encuentra estaciones y servicios</p>
           </div>
-          <div class="flex items-center gap-2">
-            <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
-            <span class="text-sm">Media disponibilidad (25-75%)</span>
+          <button
+            @click="isMobileDrawerOpen = false"
+            class="ml-auto text-gray-500 hover:text-gray-700"
+          >
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+
+        <!-- Mismo contenido que el panel de escritorio -->
+        <div class="relative">
+          <input
+            type="text"
+            placeholder="Buscar estación o servicio..."
+            class="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+            v-model="searchQuery"
+          />
+          <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+        </div>
+
+        <!-- Filtros de combustible -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <input
+                type="checkbox"
+                v-model="showStations"
+                class="form-checkbox"
+                id="show-stations-mobile"
+              />
+              <label for="show-stations-mobile" class="text-sm font-medium flex items-center gap-2">
+                <i class="fas fa-gas-pump text-green-600"></i>
+                Estaciones
+              </label>
+            </div>
+            <span class="text-xs text-gray-500">{{ filteredStations.length }} disponibles</span>
           </div>
-          <div class="flex items-center gap-2">
-            <div class="w-3 h-3 rounded-full bg-red-500"></div>
-            <span class="text-sm">Baja disponibilidad (menor al 25%)</span>
+          
+          <!-- Filtro de combustibles múltiples para móvil -->
+          <div v-if="showStations" class="space-y-2">
+            <label class="text-sm font-medium text-gray-700">Tipos de combustible</label>
+            <div class="grid grid-cols-2 gap-2">
+              <div
+                v-for="fuel in fuelTypes"
+                :key="fuel.value"
+                class="flex items-center gap-2"
+              >
+                <input
+                  type="checkbox"
+                  :value="fuel.value"
+                  v-model="selectedFuels"
+                  :id="'fuel-mobile-' + fuel.value"
+                  class="form-checkbox"
+                />
+                <label
+                  :for="'fuel-mobile-' + fuel.value"
+                  class="text-sm flex items-center gap-1"
+                >
+                  <span
+                    class="w-3 h-3 rounded-full"
+                    :class="'bg-' + fuel.color + '-500'"
+                  ></span>
+                  {{ fuel.label }}
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filtro de disponibilidad para móvil -->
+          <div v-if="showStations" class="space-y-2 mt-4">
+            <div class="flex justify-between items-center">
+              <label class="text-sm font-medium text-gray-700">Disponibilidad mínima</label>
+              <span class="text-sm text-gray-500">{{ availabilityRange }}%</span>
+            </div>
+            <input
+              type="range"
+              v-model="availabilityRange"
+              min="0"
+              max="100"
+              step="10"
+              class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+            />
+            <div class="flex justify-between text-xs text-gray-500">
+              <span>0%</span>
+              <span>25%</span>
+              <span>50%</span>
+              <span>75%</span>
+              <span>100%</span>
+            </div>
           </div>
         </div>
+
+        <!-- Filtros de servicios -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <input
+                type="checkbox"
+                v-model="showServices"
+                class="form-checkbox"
+                id="show-services-mobile"
+              />
+              <label for="show-services-mobile" class="text-sm font-medium flex items-center gap-2">
+                <i class="fas fa-concierge-bell text-blue-600"></i>
+                Servicios
+              </label>
+            </div>
+            <span class="text-xs text-gray-500">{{ filteredServices.length }} disponibles</span>
+          </div>
+          <select
+            v-model="selectedServiceType"
+            class="w-full p-2 border rounded-lg text-sm"
+            :disabled="!showServices"
+          >
+            <option
+              v-for="type in serviceTypes"
+              :key="type.value"
+              :value="type.value"
+            >
+              {{ type.label }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="flex gap-2">
+          <button
+            @click="buscarEstacionCercana"
+            class="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg shadow hover:bg-green-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+            :disabled="loading"
+          >
+            <i class="fas fa-gas-pump" v-if="!loading"></i>
+            <i class="fas fa-spinner fa-spin" v-else></i>
+            <span>{{ loading ? 'Buscando...' : 'Buscar cercana' }}</span>
+          </button>
+
+          <button
+            v-if="route.length || to"
+            @click="limpiarBusquedaCercana"
+            class="bg-red-500 text-white px-3 py-2 rounded-lg shadow hover:bg-red-600 transition flex items-center justify-center"
+            title="Limpiar búsqueda"
+          >
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+    
+        
       </div>
     </div>
 
@@ -409,12 +683,7 @@ const limpiarBusquedaCercana = () => {
         </LPopup>
       </LMarker>
 
-      <LMarker
-        v-if="to"
-        :lat-lng="to"
-      >
-        <LPopup>Destino seleccionado</LPopup>
-      </LMarker>
+
 
       <!-- Estaciones -->
       <LMarker
@@ -430,27 +699,35 @@ const limpiarBusquedaCercana = () => {
               alt="Imagen de estación"
               class="w-full rounded shadow mb-2"
             />
-            <div class="space-y-2">
-              <div class="flex items-center gap-2">
-                <div
-                  :class="[
-                    'w-3 h-3 rounded-full',
-                    getStationStatus(station)
-                  ]"
-                ></div>
-                <span>Disponibilidad: {{ getFuelAvailability(station, selectedFuelType) }}%</span>
-              </div>
-              <div v-if="station.fuels">
+            <div class="space-y-3">
+              <div v-if="station.fuels" class="space-y-2">
                 <span class="font-semibold">Combustibles:</span>
-                <div class="flex flex-wrap gap-1 mt-1">
-                  <span
-                    v-for="fuel in station.fuels"
-                    :key="fuel.type"
-                    class="px-2 py-1 bg-gray-100 rounded-full text-sm"
-                  >
-                    {{ fuel.type }}
-                  </span>
+                <div v-for="fuel in station.fuels" :key="fuel.type" class="space-y-1">
+                  <div class="flex justify-between items-center">
+                    <span :class="fuelBadgeClass(fuel.type) + ' px-2 py-1 rounded text-sm'">
+                      {{ fuel.type }}
+                    </span>
+                    <span class="text-sm text-gray-600">
+                      {{ fuel.available }}L / {{ fuel.capacity }}L
+                      ({{ Math.round((fuel.available / fuel.capacity) * 100) }}%)
+                    </span>
+                  </div>
+                  <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div
+                      class="h-full transition-all"
+                      :class="getBatteryLevel(fuel.available, fuel.capacity)"
+                      :style="{ width: (fuel.available / fuel.capacity * 100) + '%' }"
+                    ></div>
+                  </div>
                 </div>
+              </div>
+              <div v-if="station.address" class="text-sm text-gray-600">
+                <i class="fas fa-map-marker-alt mr-1"></i>
+                {{ station.address }}
+              </div>
+              <div v-if="station.hour" class="text-sm text-gray-600">
+                <i class="fas fa-clock mr-1"></i>
+                {{ station.hour }}
               </div>
             </div>
           </div>
@@ -468,6 +745,7 @@ const limpiarBusquedaCercana = () => {
         :key="service._id"
         :lat-lng="service.point.coordinates"
       >
+
         <LIcon
           :icon-url="getIconUrl(service.category)"
           :icon-size="[32, 32]"
@@ -516,5 +794,46 @@ const limpiarBusquedaCercana = () => {
 }
 .absolute {
   transition: all 0.3s ease-in-out;
+}
+
+/* Estilos para el input range personalizado */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: #10b981;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  background: #059669;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: #10b981;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.1);
+  background: #059669;
 }
 </style>

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
     import { LMap, LMarker, LTileLayer, LIcon } from "@vue-leaflet/vue-leaflet";
     import useLocationMap from "@/composables/useLocationMap";
-    import { inject, ref, watch } from "vue";
+    import { inject, ref, watch, computed } from "vue";
     import { reset } from "@formkit/vue";
     import StationAPI from "@/api/StationAPI";
     import UploadAPI from "@/api/UploadAPI";
@@ -11,7 +11,11 @@
     const router = useRouter()
     const { zoom, center, pin } = useLocationMap()
 
-    const fuels = ref([])
+
+    const selectedFuelTypes = ref([])
+    const fuelCapacities = ref({})  // { 'Gasolina': 4000, 'Diesel': 3000, ... }
+
+
     const nameStation = ref('')
     const previewImage = ref('')
     const loading = ref(false)
@@ -87,16 +91,22 @@
             toast && toast.error("Formato inválido. Puedes pegar una URL de Google Maps, coordenadas decimales o DMS. Ejemplo: https://www.google.com/maps/place/… o -17.97, -67.08 o 17 57 33.5 S 67 06 23.5 W");
         }
     }
-
+    const fuelsComp = computed(() =>
+      selectedFuelTypes.value.map(type => ({
+        type,
+        capacity: fuelCapacities.value[type] || 0,
+        available: fuelCapacities.value[type] || 0,
+      }))
+    )
     const handleSubmit = async ({text_2, text_3, image, fuels, ...formData}) => {
         loading.value = true;
         try {
-            const newFuel = fuels.map((dato) => ({
-                type: dato,
-                capacity: 5000,
-                available: 10000
-            }));
-            formData.fuels = newFuel
+            if (fuelsComp.value.length === 0) {
+                toast.error('Debe seleccionar al menos un tipo de combustible con su capacidad.')
+                loading.value = false
+                return
+            }
+            formData.fuels = fuelsComp.value
             const fd = new FormData()
             fd.append('image', image[0].file)
             const { data } = await UploadAPI.upload(fd)
@@ -110,7 +120,7 @@
             reset('registerForm')
             router.push({ name: 'stations' })
         } catch (error) {
-            toast.error(error.response.data.msg)
+            toast.error(error.response.data.mensaje)
         } finally {
             loading.value = false
         }
@@ -154,23 +164,29 @@
                 }"
               />
 
-              <FormKit
-                type="checkbox"
-                label="Tipos de combustible disponibles"
-                v-model="fuels"
-                validation="required"
-                name="fuels"
-                :validation-messages="{
-                  required: 'Debe seleccionar al menos un tipo de combustible'
-                }"
-                :options="[
-                  'Gasolina',
-                  'Diesel',
-                  'Gasolina Premium',
-                  'Diesel ULS'
-                ]"
+              <div class="space-y-4">
+                <label class="block text-sm font-medium text-gray-700">Tipos de combustible y capacidad</label>
+                <div v-for="type in ['Gasolina', 'Diesel', 'Gasolina Premium', 'Diesel ULS']" :key="type" class="flex items-center gap-4">
+                  <input
+                    type="checkbox"
+                    :value="type"
+                    v-model="selectedFuelTypes"
+                    class="form-checkbox text-blue-600"
+                    :id="`fuel-${type}`"
+                  />
+                  <label :for="`fuel-${type}`" class="text-sm font-medium text-gray-800 w-40">{{ type }}</label>
 
-              />
+                  <input
+                    v-if="selectedFuelTypes.includes(type)"
+                    type="number"
+                    min="0"
+                    placeholder="Capacidad (L)"
+                    class="w-40 px-2 py-1 border rounded"
+                    v-model.number="fuelCapacities[type]"
+                  />
+                </div>
+              </div>
+
 
               <FormKit
                 type="file"

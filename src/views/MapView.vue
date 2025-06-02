@@ -18,15 +18,22 @@ import { useServicesStore } from "@/stores/services"
 import useRouteMap from "@/composables/useRouteMap"
 import * as turf from '@turf/turf'
 import { inject } from "vue"
+import RouteSidebar from "@/components/RouteSidebar.vue"
 
 const store = useStationsStore()
 const servicesStore = useServicesStore()
-const { from, to, route, calcularRuta, bufferGeoJson } = useRouteMap()
+const { from, to, route, calcularRuta, bufferGeoJson, steps, duration, distance } = useRouteMap()
 
 const zoom = ref(15)
 const center = ref([-17.973244, -67.106225])
 const toast = inject('toast')
 const API_URL = import.meta.env.VITE_BACKEND_URL
+
+
+const showInstructions = ref(false)
+
+
+
 
 // Nuevos refs para filtros
 const showStations = ref(true)
@@ -124,8 +131,12 @@ const buscarEstacionCercana = async () => {
     
     if (nearest?.geometry?.coordinates) {
       to.value = [nearest.geometry.coordinates[1], nearest.geometry.coordinates[0]]
+       
+
       await calcularRuta()
       showRoute.value = true
+      //showRoute.value = true
+      showInstructions.value = true 
     }
   } catch (error) {
     toast.error('Error al buscar la estación más cercana')
@@ -479,6 +490,15 @@ const limpiarBusquedaCercana = () => {
       </LMarker>
     </LMap>
   </div>
+  <RouteSidebar
+    :visible="showInstructions"
+    :steps="steps"
+    :duration="duration"
+    :distance="distance"
+    @close="showInstructions = false"
+  />
+
+
 </template>
 
 <style scoped>

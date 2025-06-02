@@ -1,6 +1,11 @@
 <script setup>
 import { useStationsStore } from '@/stores/stations'
 import { ref, computed } from 'vue'
+import dayjs from 'dayjs'
+import { onMounted, onUnmounted } from 'vue'
+
+let intervalId
+
 const stationsStore = useStationsStore()
 
 const search = ref('')
@@ -8,17 +13,20 @@ const selectedFuel = ref('')
 
 function fuelBadgeClass(type) {
   switch (type.toLowerCase()) {
-    case 'gasolina':
-      return 'bg-blue-100 text-blue-800';
-    case 'diesel':
-      return 'bg-yellow-100 text-yellow-800';
-    case 'gasolina premium':
-      return 'bg-green-100 text-green-800';
-    case 'diesel uls':
-      return 'bg-purple-100 text-purple-800';
-    default:
-      return 'bg-gray-100 text-gray-700';
+    case 'gasolina': return 'bg-blue-100 text-blue-800';
+    case 'diesel': return 'bg-yellow-100 text-yellow-800';
+    case 'gasolina premium': return 'bg-green-100 text-green-800';
+    case 'diesel uls': return 'bg-purple-100 text-purple-800';
+    default: return 'bg-gray-100 text-gray-700';
   }
+}
+
+function getBatteryLevel(available, capacity) {
+  const percentage = (available / capacity) * 100
+  if (percentage >= 75) return 'bg-green-500';
+  if (percentage >= 50) return 'bg-yellow-400';
+  if (percentage >= 25) return 'bg-orange-400';
+  return 'bg-red-500';
 }
 
 const allFuels = computed(() => {
@@ -39,13 +47,27 @@ const filteredStations = computed(() => {
     return matchesSearch && matchesFuel
   })
 })
+
+function formatDate(date) {
+  return dayjs(date).format('DD/MM/YYYY HH:mm')
+}
+
+onMounted(() => {
+  stationsStore.fetchStations()
+  intervalId = setInterval(() => {
+    stationsStore.fetchStations()
+  }, 10000)
+})
+
+onUnmounted(() => {
+  clearInterval(intervalId)
+})
 </script>
 
 <template>
   <div class="bg-white p-8 rounded-2xl shadow-lg">
     <h2 class="text-xl font-bold mb-4">Estaciones Registradas</h2>
     <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
-    
       <div class="flex items-center gap-2">
         <input
           v-model="search"
@@ -61,11 +83,6 @@ const filteredStations = computed(() => {
           <option v-for="fuel in allFuels" :key="fuel" :value="fuel">{{ fuel }}</option>
         </select>
       </div>
-      <RouterLink class="bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold shadow hover:bg-blue-700 transition-colors"
-        :to="{name: 'new-station'}"
-      >
-        <i class="fas fa-plus mr-2"></i> Registrar Nueva Estación
-      </RouterLink>
     </div>
 
     <div class="overflow-x-auto">
@@ -76,6 +93,7 @@ const filteredStations = computed(() => {
             <th class="py-3 px-4">Horario</th>
             <th class="py-3 px-4">Dirección</th>
             <th class="py-3 px-4">Combustibles</th>
+            <th class="py-3 px-4">Última actualización</th>
             <th class="py-3 px-4 rounded-r-xl">Acciones</th>
           </tr>
         </thead>
@@ -84,13 +102,24 @@ const filteredStations = computed(() => {
             <td class="py-3 px-4 font-semibold">{{ station.name }}</td>
             <td class="py-3 px-4">{{ station.hour }}</td>
             <td class="py-3 px-4">{{ station.address }}</td>
-            <td class="py-3 px-4">
-              <div class="flex flex-wrap gap-2">
-                <span v-for="fuel in station.fuels" :key="fuel.type" :class="'px-3 py-1 rounded-full text-xs font-semibold ' + fuelBadgeClass(fuel.type)">
-                  {{ fuel.type }}
-                </span>
+            <td class="py-3 px-4 space-y-2">
+              <div v-for="fuel in station.fuels" :key="fuel.type">
+                <div class="flex justify-between text-xs font-semibold mb-1">
+                  <span :class="fuelBadgeClass(fuel.type) + ' px-2 py-1 rounded'">
+                    {{ fuel.type }}
+                  </span>
+                  <span class="text-gray-500">{{ fuel.available }} / {{ fuel.capacity }}</span>
+                </div>
+                <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    class="h-full transition-all"
+                    :class="getBatteryLevel(fuel.available, fuel.capacity)"
+                    :style="{ width: (fuel.available / fuel.capacity * 100) + '%' }"
+                  ></div>
+                </div>
               </div>
             </td>
+            <td class="py-3 px-4 text-sm text-gray-500">{{ formatDate(station.last_updated) }}</td>
             <td class="py-3 px-4 space-x-2 flex items-center">
               <button class="text-blue-600 hover:bg-blue-50 p-2 rounded transition-colors">
                 Editar

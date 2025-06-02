@@ -28,6 +28,12 @@ const menuSections = [
       { name: 'new-service', icon: 'fas fa-plus', label: 'Nuevo Servicio' },
     ],
   },
+  {
+    title: 'Actualizar',
+    items: [
+      { name: 'fuel-update', icon: 'fas fa-edit', label: 'Actualizar Combustible' },
+    ],
+  }
 ];
 </script>
 

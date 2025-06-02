@@ -54,6 +54,11 @@ const router = createRouter({
           name: 'new-station',
           component: () => import('../views/NewStationView.vue')
         },
+        {
+          path: '/actualizar-combustible',
+          name: 'fuel-update',
+          component: () => import('../components/ActualizarCombustible.vue')
+        }
         
       ]
 

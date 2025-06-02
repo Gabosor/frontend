@@ -134,6 +134,7 @@
           }"
           :options="[
                 { label: 'Restaurante', value: 'restaurante' },
+                { label: 'Farmacia', value: 'farmacia' },
                 { label: 'Baño público', value: 'baño' },
                 { label: 'Tienda de barrio', value: 'tienda' },
                 { label: 'Cajero automático', value: 'cajero' },

@@ -6,17 +6,23 @@ export default function useRouteMap() {
   const route = ref([])
   const from = ref(null)
   const to = ref(null)
+  const steps = ref([])
+  const duration = ref(0)
+  const distance = ref(0)
 
   const calcularRuta = async () => {
     if (!from.value || !to.value) return
     try {
-      route.value = await getRoute(from.value, to.value)
+      const data = await getRoute(from.value, to.value)
+      route.value = data.coordinates
+      steps.value = data.steps
+      duration.value = data.duration
+      distance.value = data.distance
     } catch (error) {
       console.error('Error al calcular la ruta:', error.message)
     }
   }
 
-  // 👉 Calcula un buffer de 500 metros alrededor del punto de origen
   const bufferGeoJson = computed(() => {
     if (!from.value) return null
     const point = turf.point([from.value[1], from.value[0]]) // lng, lat
@@ -27,6 +33,9 @@ export default function useRouteMap() {
     from,
     to,
     route,
+    steps,
+    duration,
+    distance,
     calcularRuta,
     bufferGeoJson
   }

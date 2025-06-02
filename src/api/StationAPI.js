@@ -9,5 +9,8 @@ export default {
     },
     all(){
         return api.get('/stations')
+    },
+    updateFuel(id, data){
+        return api.patch(`/stations/${id}/fuel`, data)
     }
 }

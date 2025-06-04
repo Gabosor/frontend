@@ -104,7 +104,6 @@ const obtenerUbicacion = () => {
       const lng = pos.coords.longitude
       const userPoint = [lat, lng]
 
-
       from.value = userPoint
       center.value = userPoint
       loading.value = false
@@ -112,18 +111,33 @@ const obtenerUbicacion = () => {
     },
     (error) => {
       loading.value = false
+      // Definimos el punto de ubicación por defecto
+      const defaultLocation = [-17.989048, -67.135683];
+
       switch(error.code) {
         case error.PERMISSION_DENIED:
-          toast.error('Por favor, permite el acceso a tu ubicación para usar esta función')
+          toast.error('Por favor, permite el acceso a tu ubicación para usar esta función. Se utilizará una ubicación por defecto.')
+          // Si el permiso es denegado, usa la ubicación por defecto
+          from.value = defaultLocation;
+          center.value = defaultLocation;
           break
         case error.POSITION_UNAVAILABLE:
-          toast.error('La información de ubicación no está disponible')
+          toast.error('La información de ubicación no está disponible. Se utilizará una ubicación por defecto.')
+          // Si la posición no está disponible, usa la ubicación por defecto
+          from.value = defaultLocation;
+          center.value = defaultLocation;
           break
         case error.TIMEOUT:
-          toast.error('La solicitud de ubicación ha expirado')
+          toast.error('La solicitud de ubicación ha expirado. Se utilizará una ubicación por defecto.')
+          // Si hay un timeout, usa la ubicación por defecto
+          from.value = defaultLocation;
+          center.value = defaultLocation;
           break
         default:
-          toast.error('Error al obtener tu ubicación')
+          toast.error('Error al obtener tu ubicación. Se utilizará una ubicación por defecto.')
+          // Para cualquier otro error, usa la ubicación por defecto
+          from.value = defaultLocation;
+          center.value = defaultLocation;
       }
     },
     {
@@ -647,10 +661,7 @@ const fuelBadgeClass = (type) => {
       :use-global-leaflet="false"
       class="h-full w-full z-0"
     >
-      <LGeoJson
-        v-if="bufferGeoJson"
-        :geojson="bufferGeoJson"
-      />
+   
 
       <LTileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

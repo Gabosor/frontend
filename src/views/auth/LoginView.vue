@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-    import { inject } from 'vue';
+    import { inject, onMounted } from 'vue';
     import AuthAPI from '@/api/AuthAPI';
       import { useRouter } from 'vue-router';
 
@@ -21,7 +21,43 @@
           }
 
       }
-    
+    const handleCredentialResponse = async (response) => {
+      try {
+        const credential = response.credential
+        //const { data } = await AuthAPI.loginGoogle({ credential })
+        const { data } = await AuthAPI.loginConGoogle({ credential })
+
+        localStorage.setItem('AUTH_TOKEN', data.token)
+        toast.open({
+          message: 'Inicio de sesión exitoso',
+          type: 'success',
+        })
+        router.push({ name: 'home' })
+      } catch (error) {
+        console.error('Error autenticando con Google:', error)
+        toast.open({
+          message: 'Error al iniciar sesión con Google',
+          type: 'error',
+        })
+      }
+    }
+    onMounted(() => {
+      console.log('CLIENT ID:', import.meta.env.VITE_GOOGLE_CLIENT_ID)
+
+      if (window.google && window.google.accounts) {
+        window.google.accounts.id.initialize({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+          callback: handleCredentialResponse
+        })
+
+        window.google.accounts.id.renderButton(
+          document.getElementById('google-button'),
+          { theme: 'outline', size: 'large', text: 'continue_with' }
+        )
+      } else {
+        console.error('Google Identity Services no cargado')
+      }
+    })
 </script>
 
 <template>
@@ -65,6 +101,14 @@
           
         >Iniciar Sesión</FormKit>
       </FormKit>
+      <div class="flex items-center justify-center my-4">
+        <hr class="w-full border-gray-300" />
+        <span class="mx-4 text-gray-500 text-sm whitespace-nowrap">o iniciar con</span>
+        <hr class="w-full border-gray-300" />
+      </div>
+
+      <!-- ✅ ID corregido aquí -->
+      <div id="google-button" class="w-full flex justify-center"></div>
     </div>
   </div>
 </template>

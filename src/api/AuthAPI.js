@@ -11,5 +11,8 @@ export default {
         Authorization: `Bearer ${token}`
       }
     })
+  },
+   loginConGoogle(payload) {
+      return api.post('/auth/google', payload)
   }
 }

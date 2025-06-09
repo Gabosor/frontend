@@ -553,7 +553,14 @@ const fuelBadgeClass = (type) => {
           </RouterLink>
         </template>
       </button>
+      <RouterLink
+        v-if="userStore.isAuthenticated && userStore.user.rol === 'gasolinera'"
+        to="/actualizar-combustible" class="fixed bottom-5 left-24 z-[1000] bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition flex items-center gap-2">
+        <i class="fas fa-gas-pump"></i>
+        <span class="text-sm font-medium">Actualizar Combustible</span>
+      </RouterLink>
     </div>
+
       
     <!-- Botón flotante para móvil -->
     <button

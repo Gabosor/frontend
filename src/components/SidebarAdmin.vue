@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/user';
 
@@ -7,34 +7,44 @@ const router = useRouter();
 const user = useUserStore();
 const currentRoute = ref(router.currentRoute.value.name);
 
-const menuSections = [
-  {
-    title: 'Principal',
-    items: [
-      { name: 'dashboard-stats', icon: 'fas fa-home', label: 'Dashboard' },
-    ],
-  },
-  {
-    title: 'Mostrar registros',
-    items: [
-      { name: 'stations', icon: 'fas fa-gas-pump', label: 'Estaciones' },
-      { name: 'services', icon: 'fas fa-concierge-bell', label: 'Servicios' },
-    ],
-  },
-  {
-    title: 'Registrar',
-    items: [
-      { name: 'new-station', icon: 'fas fa-plus-circle', label: 'Nueva Estación' },
-      { name: 'new-service', icon: 'fas fa-plus', label: 'Nuevo Servicio' },
-    ],
-  },
-  {
-    title: 'Actualizar',
-    items: [
-      { name: 'fuel-update', icon: 'fas fa-edit', label: 'Actualizar Combustible' },
-    ],
-  }
-];
+const menuSections = computed(() => {
+  const sections = [
+    {
+      title: 'Principal',
+      items: [
+        { name: 'dashboard-stats', icon: 'fas fa-home', label: 'Dashboard', roles: ['admin'] },
+      ],
+    },
+    {
+      title: 'Mostrar registros',
+      items: [
+        { name: 'stations', icon: 'fas fa-gas-pump', label: 'Estaciones', roles: ['admin'] },
+        { name: 'services', icon: 'fas fa-concierge-bell', label: 'Servicios', roles: ['admin'] },
+      ],
+    },
+    {
+      title: 'Registrar',
+      items: [
+        { name: 'new-station', icon: 'fas fa-plus-circle', label: 'Nueva Estación', roles: ['admin'] },
+        { name: 'new-service', icon: 'fas fa-plus', label: 'Nuevo Servicio', roles: ['admin'] },
+      ],
+    },
+    {
+      title: 'Actualizar',
+      items: [
+        { name: 'fuel-update', icon: 'fas fa-edit', label: 'Actualizar Combustible', roles: ['admin', 'gasolinera'] },
+        { name: 'assign-role', icon: 'fas fa-user-shield', label: 'Asignar Roles', roles: ['admin'] },
+        { name: 'assign-station', icon: 'fas fa-map-marker-alt', label: 'Asignar Estación', roles: ['admin'] }
+      ],
+    },
+  ];
+
+  // Filtrar las secciones y elementos según el rol del usuario
+  return sections.map(section => ({
+    ...section,
+    items: section.items.filter(item => item.roles.includes(user.user.rol))
+  })).filter(section => section.items.length > 0);
+});
 </script>
 
 <template>
@@ -43,7 +53,9 @@ const menuSections = [
       <div class="flex items-center gap-3 mb-8">
         <img src="/imageLogo.png" alt="Logo" class="w-12 h-12 shadow rounded-full border-2 border-blue-200">
         <div>
-          <h2 class="text-2xl font-extrabold text-blue-700">Admin Panel</h2>
+          <h2 class="text-2xl font-extrabold text-blue-700">
+            {{ user.user.rol === 'admin' ? 'Admin Panel' : 'Panel de Usuario' }}
+          </h2>
           <p class="text-xs text-blue-400">Sistema de Gestión</p>
         </div>
       </div>

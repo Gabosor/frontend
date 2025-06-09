@@ -18,5 +18,8 @@ export default {
     },
     getAllActiveUserLocations(){
         return api.get('/user-locations/all-active')
+    },
+    assignStation(id, data){
+        return api.put(`/stations/assign/${id}`, data)
     }
 }

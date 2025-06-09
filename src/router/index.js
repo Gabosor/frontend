@@ -58,7 +58,19 @@ const router = createRouter({
           path: '/actualizar-combustible',
           name: 'fuel-update',
           component: () => import('../components/ActualizarCombustible.vue')
+        },
+        {
+            path: '/asignar-roles',
+            name: 'assign-role',
+            component: () => import('@/views/AssignRolesView.vue'),
+            meta: { requiresAuth: true, role: 'admin' },
+        } ,
+        {
+            path: '/asignar-estacion',
+            name: 'assign-station',
+            component: () => import('@/views/AssignStationsView.vue'),
         }
+
         
       ]
 

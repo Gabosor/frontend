@@ -19,6 +19,9 @@ import useRouteMap from "@/composables/useRouteMap"
 import * as turf from '@turf/turf'
 import { inject } from "vue"
 import RouteSidebar from "@/components/RouteSidebar.vue"
+import StationAPI from "@/api/StationAPI"
+import { useUserStore } from "@/stores/user"
+const userStore = useUserStore()
 
 const store = useStationsStore()
 const servicesStore = useServicesStore()
@@ -76,6 +79,43 @@ const userIcon = {
 // Agregar variable para el intervalo
 let stationsIntervalId
 
+// Modificar los refs para el buffer
+const stationBuffers = ref({})
+const bufferInfo = ref({})
+
+// Función para crear el buffer
+const createStationBuffer = async (station) => {
+  try {
+    const response = await StationAPI.getStationConcurrency(station._id)
+    const { concurrencyCount, concurrencyLevel, radius, color } = response.data
+    
+    // Crear un círculo usando turf.js
+    const center = [station.point.coordinates[1], station.point.coordinates[0]]
+    const circle = turf.circle(center, radius / 1000, { 
+      steps: 64, 
+      units: 'kilometers',
+      properties: {
+        concurrencyCount,
+        concurrencyLevel,
+        radius,
+        color
+      }
+    })
+    
+    // Guardar la información del buffer
+    stationBuffers.value[station._id] = {
+      circle,
+      concurrencyCount,
+      concurrencyLevel,
+      radius,
+      color
+    }
+  } catch (error) {
+    console.error('Error al obtener la concurrencia:', error)
+  }
+}
+
+// Modificar onMounted para crear los buffers automáticamente
 onMounted(async () => {
   obtenerUbicacion()
   await Promise.all([
@@ -83,9 +123,18 @@ onMounted(async () => {
     servicesStore.fetchServices()
   ])
   
+  // Crear buffers para todas las estaciones
+  for (const station of store.stations) {
+    await createStationBuffer(station)
+  }
+  
   // Iniciar actualización automática cada 10 segundos
-  stationsIntervalId = setInterval(() => {
-    store.fetchStations()
+  stationsIntervalId = setInterval(async () => {
+    await store.fetchStations()
+    // Actualizar buffers para todas las estaciones
+    for (const station of store.stations) {
+      await createStationBuffer(station)
+    }
   }, 10000)
 })
 
@@ -312,6 +361,8 @@ const fuelBadgeClass = (type) => {
     default: return 'bg-gray-100 text-gray-700'
   }
 }
+
+
 </script>
 
 <template>
@@ -475,6 +526,35 @@ const fuelBadgeClass = (type) => {
 
     </div>
 
+
+    <div>
+      <button
+        @click="handleUserButtonClick"
+        class="fixed bottom-5 right-5 z-[1000] bg-green-600 text-white p-2 rounded-full shadow-lg hover:bg-green-700 transition flex items-center justify-center"
+      >
+        <template v-if="userStore.isAuthenticated">
+          <img
+            :src="userStore.user.imagen || '/default.jpg'"
+            @error="e => e.target.src = '/default.jpg'"
+            alt="Foto de perfil"
+            class="w-12 h-12 rounded-full object-cover"
+          />
+
+          <button @click="userStore.logout" class="fas fa-user font-bold text-sm">
+            Cerrar sesión
+            <p class="text-xs">
+              {{ userStore.user.email }}
+            </p>
+          </button>
+        </template>
+        <template v-else>
+          <RouterLink to="/login" class="fas fa-user text-xl">
+            Iniciar sesión
+          </RouterLink>
+        </template>
+      </button>
+    </div>
+      
     <!-- Botón flotante para móvil -->
     <button
       @click="isMobileDrawerOpen = true"
@@ -740,6 +820,58 @@ const fuelBadgeClass = (type) => {
                 <i class="fas fa-clock mr-1"></i>
                 {{ station.hour }}
               </div>
+              
+              <RouterLink
+                v-if="!userStore.isAuthenticated"
+                :to="{ name: 'login'}"
+                class="w-full mt-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition inline-flex items-center justify-center font-semibold shadow-md "
+              >
+                <span class="text-white">Ver usuarios en el area</span>
+              </RouterLink>
+              <div v-else>
+                  <LGeoJson
+                        v-if="stationBuffers[station._id]"
+                        :geojson="stationBuffers[station._id].circle"
+                        :optionsStyle="{
+                          color: stationBuffers[station._id].color || '#ff0000',
+                          weight: 2,
+                          opacity: 0.6,
+                          fillOpacity: 0.2,
+                          fillColor: stationBuffers[station._id].color || '#ff0000'
+                        }"
+                      >
+                        <LPopup>
+                          <div
+                            class=" text-sm text-gray-800 space-y-2 w-64 "
+                            :style="{ borderColor: stationBuffers[station._id].color }"
+                          >
+                            <h3 class="text-lg font-semibold text-gray-900 border-b pb-1 flex items-center gap-2">
+                              Información de Concurrencia
+                            </h3>
+
+                            <p>
+                              <span class="font-medium">Nivel:</span>
+                              <span :style="{ color: stationBuffers[station._id].color }" class=" font-bold">
+                                {{ stationBuffers[station._id].concurrencyLevel }}
+                              </span>
+                            </p>
+
+                            <p class="flex items-center gap-1">
+                              <svg class="w-4 h-4 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M18.92 6.01C18.72 5.42 18.15 5 17.5 5H6.5C5.85 5 5.28 5.42 5.08 6.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 6h11l1.72 5H4.78L6.5 6zM19 16c-.83 0-1.5-.67-1.5-1.5S18.17 13 19 13s1.5.67 1.5 1.5S19.83 16 19 16zm-14 0c-.83 0-1.5-.67-1.5-1.5S4.17 13 5 13s1.5.67 1.5 1.5S5.83 16 5 16z"/>
+                              </svg>
+                              <span class="font-medium">Autos en el área:</span>
+                              {{ stationBuffers[station._id].concurrencyCount }}
+                            </p>
+                            <p>
+                              <span class="font-medium">Radio:</span>
+                              {{ stationBuffers[station._id].radius }} metros
+                            </p>
+                          </div>
+
+                        </LPopup>
+                      </LGeoJson>
+              </div>
             </div>
           </div>
         </LPopup>
@@ -777,6 +909,9 @@ const fuelBadgeClass = (type) => {
           </div>
         </LPopup>
       </LMarker>
+
+      <!-- Buffers de concurrencia -->
+
     </LMap>
   </div>
   <RouteSidebar

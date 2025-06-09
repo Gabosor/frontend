@@ -11,6 +11,7 @@ export const useUserStore = defineStore('user', () => {
     onMounted(async () => {
         try {
             const { data } = await AuthAPI.auth()
+            console.log(data)
             user.value = data      
         } catch (error) {
             console.log(error)
@@ -25,6 +26,10 @@ export const useUserStore = defineStore('user', () => {
     }
     const getUserName = computed(() => user.value?.name ? user.value?.name : '')
     const getUserEmail = computed(() => user.value?.email ? user.value?.email :'')
+    const isAuthenticated = computed(() => {
+            return !!user.value?.email && !!user.value?._id
+        })
+
     
 
 
@@ -33,6 +38,7 @@ export const useUserStore = defineStore('user', () => {
         loading,
         logout,
         getUserName,
-        getUserEmail
+        getUserEmail,
+        isAuthenticated
     }
 })

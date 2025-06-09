@@ -12,5 +12,11 @@ export default {
     },
     updateFuel(id, data){
         return api.patch(`/stations/${id}/fuel`, data)
+    },
+    getStationConcurrency(idStation){
+        return api.get(`/stations/${idStation}/concurrency`)
+    },
+    getAllActiveUserLocations(){
+        return api.get('/user-locations/all-active')
     }
 }

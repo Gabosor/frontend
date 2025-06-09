@@ -527,45 +527,51 @@ const fuelBadgeClass = (type) => {
     </div>
 
 
-    <div>
-      <button
-        @click="handleUserButtonClick"
-        class="fixed bottom-5 right-5 z-[1000] bg-green-600 text-white p-2 rounded-full shadow-lg hover:bg-green-700 transition flex items-center justify-center"
-      >
-        <template v-if="userStore.isAuthenticated">
-          <img
-            :src="userStore.user.imagen || '/default.jpg'"
-            @error="e => e.target.src = '/default.jpg'"
-            alt="Foto de perfil"
-            class="w-12 h-12 rounded-full object-cover"
-          />
+    <!-- Botones de usuario y actualización -->
+    <div class="fixed bottom-5 right-5 z-[1000] flex flex-col gap-3">
+      <div class="flex flex-col gap-3">
+        <button
+          @click="handleUserButtonClick"
+          class="bg-green-600 text-white p-2 rounded-full shadow-lg hover:bg-green-700 transition flex items-center justify-center"
+        >
+          <template v-if="userStore.isAuthenticated">
+            <img
+              :src="userStore.user.imagen || '/default.jpg'"
+              @error="e => e.target.src = '/default.jpg'"
+              alt="Foto de perfil"
+              class="w-12 h-12 rounded-full object-cover"
+            />
+            <div class="ml-2 text-left">
+              <button @click="userStore.logout" class="text-sm font-bold">
+                Cerrar sesión
+              </button>
+              <p class="text-xs">
+                {{ userStore.user.email }}
+              </p>
+            </div>
+          </template>
+          <template v-else>
+            <RouterLink to="/login" class="fas fa-user text-xl">
+              Iniciar sesión
+            </RouterLink>
+          </template>
+        </button>
 
-          <button @click="userStore.logout" class="fas fa-user font-bold text-sm">
-            Cerrar sesión
-            <p class="text-xs">
-              {{ userStore.user.email }}
-            </p>
-          </button>
-        </template>
-        <template v-else>
-          <RouterLink to="/login" class="fas fa-user text-xl">
-            Iniciar sesión
-          </RouterLink>
-        </template>
-      </button>
-      <RouterLink
-        v-if="userStore.isAuthenticated && userStore.user.rol === 'gasolinera'"
-        to="/actualizar-combustible" class="fixed bottom-5 left-24 z-[1000] bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition flex items-center gap-2">
-        <i class="fas fa-gas-pump"></i>
-        <span class="text-sm font-medium">Actualizar Combustible</span>
-      </RouterLink>
+        <RouterLink
+          v-if="userStore.isAuthenticated && userStore.user.rol === 'gasolinera'"
+          to="/actualizar-combustible" 
+          class="bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition flex items-center justify-center gap-2"
+        >
+          <i class="fas fa-gas-pump"></i>
+          <span class="text-sm font-medium">Actualizar Combustible</span>
+        </RouterLink>
+      </div>
     </div>
 
-      
     <!-- Botón flotante para móvil -->
     <button
       @click="isMobileDrawerOpen = true"
-      class="md:hidden fixed bottom-5 right-5 z-[1000] bg-green-600 text-white p-4 rounded-full shadow-lg hover:bg-green-700 transition flex items-center gap-2"
+      class="md:hidden fixed bottom-5 left-5 z-[1000] bg-green-600 text-white p-4 rounded-full shadow-lg hover:bg-green-700 transition flex items-center gap-2"
     >
       <img src="/imageLogo.png" alt="Logo" class="w-6 h-6 object-contain" />
       <span class="font-medium">Filtros</span>
@@ -988,5 +994,50 @@ input[type="range"]::-moz-range-thumb {
 input[type="range"]::-moz-range-thumb:hover {
   transform: scale(1.1);
   background: #059669;
+}
+
+/* Estilos adicionales para mejorar la responsividad */
+@media (max-width: 768px) {
+  .fixed {
+    bottom: 1.25rem;
+  }
+  
+  .fixed.bottom-5 {
+    bottom: 1.25rem;
+  }
+  
+  .fixed.right-5 {
+    right: 1.25rem;
+  }
+  
+  .fixed.left-5 {
+    left: 1.25rem;
+  }
+
+  /* Ajustes específicos para móvil */
+  .flex-col.gap-3 {
+    gap: 0.75rem;
+  }
+
+  /* Ajustar el tamaño de los botones en móvil */
+  .rounded-full {
+    padding: 0.75rem;
+  }
+}
+
+/* Ajustes para el panel de control en escritorio */
+@media (min-width: 769px) {
+  .w-96 {
+    width: 24rem;
+  }
+  
+  .max-h-\[calc\(100vh-2\.5rem\)\] {
+    max-height: calc(100vh - 2.5rem);
+  }
+
+  /* Ajustar el espaciado entre botones en escritorio */
+  .flex-col.gap-3 {
+    gap: 1rem;
+  }
 }
 </style>
